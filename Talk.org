@@ -7,12 +7,13 @@
 #+BEAMER_THEME: metropolis
 
 * Introduction
-** Standard Hello World :B_block:
+** Standard Hello World
 #+begin_src sml
 implement main0 = println! ("hello world")
 #+end_src
-
-** List Datatype :B_block:
+** List Datatype
+- First from the ML side
+** List Datatype
 - a linear list type
 #+begin_src sml
 datatype list_vt (a:vt@ype, int) =
@@ -21,8 +22,8 @@ datatype list_vt (a:vt@ype, int) =
     list_cons(a, n+1) of (a, list(a, n))
 #+end_src
 
-** List Datatype :B_block:
-- probably more familiar
+** List Datatype
+- probably more familiar (~_vt~ for viewtype)
 #+begin_src sml
 datatype list_vt                    =
   | list_nil       of ()
@@ -30,8 +31,8 @@ datatype list_vt                    =
     list_cons         of (a, list(a   ))
 #+end_src
 
-** List Datatype :B_block:
-- indexed on numbers, dependant types!
+** List Datatype
+- indexed on numbers, dependant types, just like ~(S(S(..)))~
 #+begin_src sml
 datatype list_vt                    =
   | list_nil(a, 0) of ()
@@ -39,7 +40,7 @@ datatype list_vt                    =
     list_cons(a, n+1) of (a, list(a, n))
 #+end_src
 
-** List Datatype :B_block:
+** List Datatype
 - numbers can be constrained, refinement types!
 #+begin_src sml
 datatype list_vt                    =
@@ -48,17 +49,8 @@ datatype list_vt                    =
     list_cons(a, n+1) of (a, list(a, n))
 #+end_src
 
-** List Datatype :B_block:
+** List Datatype
 - parameterized on a view, linear types!
-#+begin_src sml
-datatype list_vt_vt (a:vt@ype, int) =
-  | list_nil(a, 0) of ()
-  | {n:int | n >= 0}
-    list_cons(a, n+1) of (a, list(a, n))
-#+end_src
-
-** List Datatype :B_block:
-- all ADT's are GADT's in ATS
 #+begin_src sml
 datatype list_vt (a:vt@ype, int) =
   | list_nil(a, 0) of ()
@@ -66,6 +58,19 @@ datatype list_vt (a:vt@ype, int) =
     list_cons(a, n+1) of (a, list(a, n))
 #+end_src
 
+** List Datatype
+- all ADT's are GADT's in ATS
+#+begin_src sml
+datatype list_vt (a:vt@ype, int) =
+  | list_nil(a, 0) of ()
+  | {n:int | n >= 0}
+    list_cons(a, n+1) of (a, list(a, n))
+#+end_src
+** List Datatype
+- tons type level concepts to learn!
+- we'll get to some later ...
+** Manual Memory Management
+- Now from the C side!
 ** Manual Memory Management
 - What resources are leaked?
 #+begin_src c
@@ -109,7 +114,7 @@ in
 end
 #+end_src
 ** Manual Memory Management
-- "Client-facing" code, analogous, no leaks
+- "Client-facing" code, analogous, safe, this is why ATS is "fast"
 #+begin_src c
 implement main0 () = let
   val (     i) = malloc (sizeof<int>)
@@ -121,7 +126,7 @@ in
 end
 #+end_src
 ** Manual Memory Management
-- ~malloc~ proof ~pf~ passed to ~ptr_set~
+- ~malloc~ /produces/ a linear proof ~pf~, /consumed/ by ~ptr_set~
 #+begin_src c
 implement main0 () = let
   val (pf | i) = malloc (sizeof<int>)
@@ -133,19 +138,19 @@ in
 end
 #+end_src
 ** Manual Memory Management
-- ~malloc~ proof ~pf~ _consumed_ _by_ ~ptr_set~
+- ~ptr_set~ /produces/ a proof ~pfset~
 #+begin_src c
 implement main0 () = let
   val (pf | i) = malloc (sizeof<int>)
   val (pfset | ()) = ptr_set(pf | i, 10)
-  val (pfFile | fp) = fopen("test.txt", "r")
+  val (       | fp) = fopen("test.txt", "r")
 in
   free(        i);
   fclose(         fp);
 end
 #+end_src
 ** Manual Memory Management
-- ~fopen~ produces a proof of the file descriptor
+- ~fopen~ produces a proof of the file descriptor ~pfFile~
 #+begin_src c
 implement main0 () = let
   val (pf | i) = malloc (sizeof<int>)
@@ -157,15 +162,15 @@ in
 end
 #+end_src
 ** Manual Memory Management
-- What happens when ~free~ and ~fopen~ are commented out?
+- What happens when ~free~ and ~fopen~ are deleted?
 #+begin_src c
 implement main0 () = let
   val (pf | i) = malloc (sizeof<int>)
   val (pfset | ()) = ptr_set(pf | i, 10)
   val (pfFile | fp) = fopen("test.txt", "r")
 in
-  // free(pfset | i);
-  // fclose(pfFile | fp);
+
+
 end
 #+end_src
 ** Manual Memory Management
@@ -176,8 +181,8 @@ implement main0 () = let
   val (pfset <---
   val (pfFile | fp) = fopen("test.txt", "r")
 in
-  // free(pfset | i);
-  // fclose(pfFile | fp);
+
+
 end
 #+end_src
 ** Manual Memory Management
@@ -188,7 +193,13 @@ implement main0 () = let
   val (pfset <---
   val (pfFile <---
 in
-  // free(pfset | i);
-  // fclose(pfFile | fp);
+
+
 end
 #+end_src
+** Manual Memory Management
+- Free to write your all your code this way!
+  - safe from buffer overflows & pointer bugs
+  - ... there's sugar for implicitly passing proofs around
+- Reuse decades of design sensibilities (safely!)
+- But you're not benefitting from Functional Programming™...

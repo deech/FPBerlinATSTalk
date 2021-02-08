@@ -1,0 +1,13 @@
+#+TITLE:
+
+* intro
+* malloc
+* array with user input
+* left-pad?
+* treap?
+* dataprop example
+* theorem proving example
+* array cons uncons
+* linear proofs for concurrency
+* c ffi? (malloc/free impls?)
+* interaction with gc

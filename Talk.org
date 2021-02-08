@@ -1,0 +1,194 @@
+#+TITLE: Why Linear Types Are The Future Of Systems Programming
+#+AUTHOR: Aditya Siram
+#+OPTIONS: H:2 toc:f
+#+OPTIONS: ^:nil
+#+LATEX_CLASS: beamer
+#+LATEX_listingsCLASS_OPTIONS: [presentation]
+#+BEAMER_THEME: metropolis
+
+* Introduction
+** Standard Hello World :B_block:
+#+begin_src sml
+implement main0 = println! ("hello world")
+#+end_src
+
+** List Datatype :B_block:
+- a linear list type
+#+begin_src sml
+datatype list_vt (a:vt@ype, int) =
+  | list_nil(a, 0) of ()
+  | {n:int | n >= 0}
+    list_cons(a, n+1) of (a, list(a, n))
+#+end_src
+
+** List Datatype :B_block:
+- probably more familiar
+#+begin_src sml
+datatype list_vt                    =
+  | list_nil       of ()
+  |
+    list_cons         of (a, list(a   ))
+#+end_src
+
+** List Datatype :B_block:
+- indexed on numbers, dependant types!
+#+begin_src sml
+datatype list_vt                    =
+  | list_nil(a, 0) of ()
+  |
+    list_cons(a, n+1) of (a, list(a, n))
+#+end_src
+
+** List Datatype :B_block:
+- numbers can be constrained, refinement types!
+#+begin_src sml
+datatype list_vt                    =
+  | list_nil(a, 0) of ()
+  | {n:int | n >= 0}
+    list_cons(a, n+1) of (a, list(a, n))
+#+end_src
+
+** List Datatype :B_block:
+- parameterized on a view, linear types!
+#+begin_src sml
+datatype list_vt_vt (a:vt@ype, int) =
+  | list_nil(a, 0) of ()
+  | {n:int | n >= 0}
+    list_cons(a, n+1) of (a, list(a, n))
+#+end_src
+
+** List Datatype :B_block:
+- all ADT's are GADT's in ATS
+#+begin_src sml
+datatype list_vt (a:vt@ype, int) =
+  | list_nil(a, 0) of ()
+  | {n:int | n >= 0}
+    list_cons(a, n+1) of (a, list(a, n))
+#+end_src
+
+** Manual Memory Management
+- What resources are leaked?
+#+begin_src c
+int main(int argc, char** argv) {
+  int* i = (int*)malloc(sizeof(int));
+  *i = 10;
+  FILE* fp = fopen("test.txt","r");
+  return 0;
+}
+#+end_src
+** Manual Memory Management
+- Memory!
+#+begin_src c
+int main(int argc, char** argv) {
+  int* i = (int*)malloc(sizeof(int)); // <--- LEAK!!
+  *i = 10;
+  FILE* fp = fopen("test.txt","r");
+  return 0;
+}
+#+end_src
+** Manual Memory Management
+- File descriptor
+#+begin_src c
+int main(int argc, char** argv) {
+  int* i = (int*)malloc(sizeof(int)); // <--- LEAK!!
+  *i = 10;
+  FILE* fp = fopen("test.txt","r"); // <-- LEAK!!
+  return 0;
+}
+#+end_src
+** Manual Memory Management
+- /Equivalent/ ATS program
+#+begin_src sml
+implement main0 () = let
+  val (pf | i) = malloc (sizeof<int>)
+  val (pfset | ()) = ptr_set(pf | i, 10)
+  val (pfFile | fp) = fopen("test.txt", "r")
+in
+  free(pfset | i);
+  fclose(pfFile | fp);
+end
+#+end_src
+** Manual Memory Management
+- "Client-facing" code, analogous, no leaks
+#+begin_src c
+implement main0 () = let
+  val (     i) = malloc (sizeof<int>)
+  val (        ()) = ptr_set(     i, 10)
+  val (         fp) = fopen("test.txt", "r")
+in
+  free(        i);
+  fclose(         fp);
+end
+#+end_src
+** Manual Memory Management
+- ~malloc~ proof ~pf~ passed to ~ptr_set~
+#+begin_src c
+implement main0 () = let
+  val (pf | i) = malloc (sizeof<int>)
+  val (      | ()) = ptr_set(pf | i, 10)
+  val (         fp) = fopen("test.txt", "r")
+in
+  free(        i);
+  fclose(         fp);
+end
+#+end_src
+** Manual Memory Management
+- ~malloc~ proof ~pf~ _consumed_ _by_ ~ptr_set~
+#+begin_src c
+implement main0 () = let
+  val (pf | i) = malloc (sizeof<int>)
+  val (pfset | ()) = ptr_set(pf | i, 10)
+  val (pfFile | fp) = fopen("test.txt", "r")
+in
+  free(        i);
+  fclose(         fp);
+end
+#+end_src
+** Manual Memory Management
+- ~fopen~ produces a proof of the file descriptor
+#+begin_src c
+implement main0 () = let
+  val (pf | i) = malloc (sizeof<int>)
+  val (pfset | ()) = ptr_set(pf | i, 10)
+  val (pfFile | fp) = fopen("test.txt", "r")
+in
+  free(pfset | i);
+  fclose(pfFile | fp);
+end
+#+end_src
+** Manual Memory Management
+- What happens when ~free~ and ~fopen~ are commented out?
+#+begin_src c
+implement main0 () = let
+  val (pf | i) = malloc (sizeof<int>)
+  val (pfset | ()) = ptr_set(pf | i, 10)
+  val (pfFile | fp) = fopen("test.txt", "r")
+in
+  // free(pfset | i);
+  // fclose(pfFile | fp);
+end
+#+end_src
+** Manual Memory Management
+- ~pfset~ is left unconsumed
+#+begin_src c
+implement main0 () = let
+  val (pf | i) = malloc (sizeof<int>)
+  val (pfset <---
+  val (pfFile | fp) = fopen("test.txt", "r")
+in
+  // free(pfset | i);
+  // fclose(pfFile | fp);
+end
+#+end_src
+** Manual Memory Management
+- ~pfFile~ is left unconsumed
+#+begin_src c
+implement main0 () = let
+  val (pf | i) = malloc (sizeof<int>)
+  val (pfset <---
+  val (pfFile <---
+in
+  // free(pfset | i);
+  // fclose(pfFile | fp);
+end
+#+end_src

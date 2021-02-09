@@ -11,7 +11,7 @@ fun {a:t@ype} read_input():Option_vt(a) =
     let prval () = opt_unnone(result) in None_vt end
   end
 
-fun make_array {n:int| n >= 1; n <= 10} (len:int n): arrayptr(int,n) =
+fun make_array {n:int| n >= 1; n <= 10} (len:int n): [l:addr] arrayptr(int,l,n) =
   let
     implement array_tabulate$fopr<int> (i) = sz2i i
   in
@@ -22,6 +22,8 @@ implement main0() =
   begin
     println! ("Length of array? (1-10):");
     case+ read_input<int>() of
+    | ~None_vt() =>
+        println! ("Not a number!")
     | ~Some_vt(len) =>
         let
           val len = g1ofg0(len)
@@ -38,6 +40,4 @@ implement main0() =
         else
           println! ("Please enter a number between 1 and 10")
         end
-    | ~None_vt() =>
-        println! ("Not a number!")
    end

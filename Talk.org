@@ -7,67 +7,108 @@
 #+BEAMER_THEME: metropolis
 
 * Introduction
-** Standard Hello World
-#+begin_src sml
-implement main0 = println! ("hello world")
-#+end_src
-** List Datatype
+** Introduction
+- ATS programming language
+  + ML
+  + linear types
+  + refinement types
+  + dependant types
+  + As fast as C! ("blazing fast")
+- Lots of typelevel madness
+  + No optimizations
+- Hongwei Xi
+  + Boston University
+** Introduction
+- Very hard!
+  + Research language
+  + hbox overfull with ideas
+  + Tons of accidental complexity
+  + Keywords everywhere ...
+  + Zero docs
+- And that's OK!
+  + Our job to make usable things
+** Introduction
+- Goals
+  + Not evangelism!
+  + Not adoption!
+  + Be dissatisfied
+  + Inspire your next language
+** Introduction
+- Very difficult to present
+  + Linear/dependant/refinement types, ML, C all converge
+- Concrete motivating examples
+  + High level handwaving
+- Assuming comfort with ML like langs and basic C
+- Start by taste of the ML & C side
+** Option Datatype
 - First from the ML side
-** List Datatype
-- a linear list type
+** Option datatype
+- A linear ~Option~ (explanations come later ...)
 #+begin_src sml
-datatype list_vt (a:vt@ype, int) =
-  | list_nil(a, 0) of ()
-  | {n:int | n >= 0}
-    list_cons(a, n+1) of (a, list(a, n))
+datavtype Option_vt (a:vt@ype, bool) =
+  | Some_vt(a, true) of (a)
+  | None_vt(a, false)
 #+end_src
-
-** List Datatype
+** Option datatype
 - probably more familiar (~_vt~ for viewtype)
 #+begin_src sml
-datatype list_vt                    =
-  | list_nil       of ()
-  |
-    list_cons         of (a, list(a   ))
+datavtype Option_vt                  =
+  | Some_vt          of (a)
+  | None_vt
 #+end_src
-
-** List Datatype
-- indexed on numbers, dependant types, just like ~(S(S(..)))~
+** Option datatype
+- Indexed on a type-level ~bool~, dependent types!
 #+begin_src sml
-datatype list_vt                    =
-  | list_nil(a, 0) of ()
-  |
-    list_cons(a, n+1) of (a, list(a, n))
+datavtype Option_vt                  =
+  | Some_vt(a, true) of (a)
+  | None_vt(a, false)
 #+end_src
-
-** List Datatype
-- numbers can be constrained, refinement types!
+** Option datatype
+- Parameterized on a view type, linear types!
 #+begin_src sml
-datatype list_vt                    =
-  | list_nil(a, 0) of ()
-  | {n:int | n >= 0}
-    list_cons(a, n+1) of (a, list(a, n))
+datavtype Option_vt (a:vt@ype, bool) =
+  | Some_vt(a, true) of (a)
+  | None_vt(a, false)
 #+end_src
-
-** List Datatype
-- parameterized on a view, linear types!
+** Option datatype
+- All ADTs in ATS are GADTs
 #+begin_src sml
-datatype list_vt (a:vt@ype, int) =
-  | list_nil(a, 0) of ()
-  | {n:int | n >= 0}
-    list_cons(a, n+1) of (a, list(a, n))
+datavtype Option_vt (a:vt@ype, bool) =
+  | Some_vt(a, true) of (a)
+  | None_vt(a, false)
 #+end_src
-
-** List Datatype
-- all ADT's are GADT's in ATS
+** Array datatype
+- A linear C array
 #+begin_src sml
-datatype list_vt (a:vt@ype, int) =
-  | list_nil(a, 0) of ()
-  | {n:int | n >= 0}
-    list_cons(a, n+1) of (a, list(a, n))
+absvtype arrayptr (a:vt@ype, l:addr, n:int) = ptr(l)
+vtypedef arrayptr (a:vt@ype, n:int) =
+  [l:addr] arrayptr(a, l, n)
 #+end_src
-** List Datatype
-- tons type level concepts to learn!
+** Array datatype
+- Just a pointer to some address, that's it
+#+begin_src sml
+                             l:addr         = ptr(l)
+vtypedef arrayptr                            ^^^^^^^
+...
+#+end_src
+** Array datatype
+- Parameterized on a linear viewtype & size (should be ~size_t~)
+#+begin_src sml
+...
+vtypedef arrayptr (a:vt@ype, n:int) =
+...                ^^^^^^^^^^^^^^^
+#+end_src
+** Array datatype
+- Returns an ~arrayptr~ to an /existential/ (unknown) address type
+#+begin_src sml
+                             l:addr         = ptr(l)
+vtypedef arrayptr                   =
+  [l:addr]
+#+end_src
+** Array datatype
+- Don't worry if this isn't clear
+- Just a taste ...
+- Tons type level concepts to learn!
 - we'll get to some later ...
 ** Manual Memory Management
 - Now from the C side!
@@ -203,3 +244,125 @@ end
   - ... there's sugar for implicitly passing proofs around
 - Reuse decades of design sensibilities (safely!)
 - But you're not benefitting from Functional Programming™...
+** Dependant & Refinement Types
+- First "big" example
+  + Read a number from the user between 1 and 10
+  + Allocate an array of that length
+  + Fill it
+  + Print it to console
+  + Exit
+- Doesn't seem like it but it's a LOT
+** Dependant & Refinement Types
+#+begin_src sml
+fun read_input():Option_vt(a) = ...
+fun make_array (len:int n): arrayptr = ...
+implement main0() = begin
+    println! ("Length of array? (1-10):");
+    case+ read_input<int>() of
+    | ~None_vt() => println! ("Not a number!")
+    | ~Some_vt(len) =>
+        if (len >= 1) * (len <= 10) then
+          make_array(len)
+        else println! ("Bad number!")
+#+end_src
+- Overall structure, types simpliifed
+- Not too far from a functional program
+** Dependant & Refinement Types
+- Simplified ~make_array~ type signature
+ #+begin_src sml
+fun make_array (len:int n): arrayptr = ...
+...
+...
+...
+ #+end_src
+** Dependant & Refinement Types
+- Real ~make_array~ type signature
+  #+begin_src sml
+fun make_array
+  {n:int| n >= 1; n <= 10}
+  (len:int n): [l:addr] arrayptr(int,l,n) =
+  ...
+  #+end_src
+
+** Dependant & Refinement Types
+- ~len~ is indexed with a refined int /sort/, ~n~.
+  #+begin_src sml
+fun make_array
+  {n:int| n >= 1; n <= 10} <-- refines it
+  (len:int n): [l:addr] arrayptr(int,l,n) =
+       ^^^^^
+  #+end_src
+** Dependant & Refinement Types
+- Array pointer at /some/ address
+  #+begin_src sml
+fun make_array
+  {n:int| n >= 1; n <= 10}
+  (len:int n): [l:addr] arrayptr(int,l,n) =
+               ^^^^^^^^^
+  #+end_src
+** Dependant & Refinement Types
+- Length between 1 & 10!
+  #+begin_src sml
+fun make_array
+  {n:int| n >= 1; n <= 10}
+  (len:int n): [l:addr] arrayptr(int,l,n) =
+                                      ^^^
+  #+end_src
+** Dependant & Refinement Types
+- ... being called here
+  #+begin_src sml
+implement main0() =
+    ...
+    case+ ... of
+    | ...
+    | ...
+        if (len >= 1) * (len <= 10) then
+          make_array(len)
+          ^^^^^^^^^^^^^^^
+  #+end_src
+** Dependant & Refinement Types
+- how does it know ~{n:int| n >= 1; n <= 10}~?!!
+  #+begin_src sml
+implement main0() =
+    ...
+    case+ ... of
+    | ...
+    | ...
+        if (len >= 1) * (len <= 10) then
+          make_array(len)
+          ^^^^^^^^^^^^^^^
+  #+end_src
+
+** Dependant & Refinement Types
+- It statically understands runtime checks!
+  #+begin_src sml
+implement main0() =
+    ...
+    case+ ... of
+    | ...
+    | ...
+        if (len >= 1) * (len <= 10) then
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+          ...
+  #+end_src
+
+** Dependant & Refinement Types
+- Runtime checks translate to type constraints at *compile time*.
+  #+begin_src sml
+implement main0() =
+    ...
+    case+ ... of
+    | ...
+    | ...
+        if (len >= 1) * (len <= 10) then
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+          ...
+  #+end_src
+** Dependant & Refinement Types
+- Now anything in ~make_array~'s call graph inherits the refinement
+  #+begin_src sml
+fun make_array
+  {n:int| n >= 1; n <= 10}
+  ^^^^^^^^^^^^^^^^^^^^^^^^
+  (len:int n): [l:addr] arrayptr(int,l,n) =
+  #+end_src

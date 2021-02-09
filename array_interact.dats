@@ -6,9 +6,11 @@ fun {a:t@ype} read_input():Option_vt(a) =
     val success = fileref_load<a> (stdin_ref,result)
   in
   if success then
-    let prval () = opt_unsome(result) in Some_vt(result) end
+    let prval () = opt_unsome(result)
+    in Some_vt(result) end
   else
-    let prval () = opt_unnone(result) in None_vt end
+    let prval () = opt_unnone(result)
+    in None_vt end
   end
 
 fun make_array {n:int| n >= 1; n <= 10} (len:int n): [l:addr] arrayptr(int,l,n) =
